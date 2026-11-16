@@ -1,0 +1,208 @@
+{
+  "servers": {
+    "ibd-mcp-server": {
+      "mcp_server_name": "ibd-mcp-server",
+      "description": "SAP knowledge graph, best practices, fit-gap analysis, API discovery, SAP Help documentation, and business API calls.",
+      "tools": {
+        "sap_knowledge_graph_bp_mapping": {
+          "description": "Map a business challenge to the BP hierarchy in SAP's Reference Business Architecture (RBA).",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Business challenge or use case description to map to the BP hierarchy." }
+            },
+            "required": ["query"]
+          },
+          "mock_response": {
+            "primary_e2e": {
+              "label": "Lead to Cash Standard B2B",
+              "phases": [
+                {
+                  "label": "Opportunity to Quote",
+                  "sub_processes": [
+                    { "id": "BPS-360_001", "label": "Sell products and services (standard B2B)", "activities": ["Manage sales proposals, bids, and quotes"] }
+                  ]
+                }
+              ]
+            },
+            "summary": "The proposed SAP S/4HANA Cloud and SAP Ariba solution maps to the Lead to Cash E2E process, covering Opportunity to Quote and Order to Fulfill sub-processes."
+          }
+        },
+        "sap_knowledge_graph_fit_gap": {
+          "description": "Perform a structured fit-gap analysis for SAP Reference Business Architecture sub-processes.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "bp_ids": { "type": "array", "items": { "type": "string" }, "description": "BP sub-process IDs from bp_mapping results." },
+              "business_challenge": { "type": "string", "description": "Optional business challenge description for context." }
+            },
+            "required": ["bp_ids"]
+          },
+          "mock_response": {
+            "sub_processes": [
+              {
+                "id": "BPS-360_001",
+                "label": "Sell products and services (standard B2B)",
+                "products": [
+                  {
+                    "product": "SAP S/4HANA Cloud Public Edition",
+                    "capabilities": [
+                      { "label": "Sales Price Calculation (S/4 CLD Public) (SC1036)", "mandatory": "Mandatory" },
+                      { "label": "Credit Management (S/4 CLD Public) (SC3083)", "mandatory": "Mandatory" },
+                      { "label": "Customer Quotation Management (Sales CLD) (SC4942)", "mandatory": "Optional" }
+                    ],
+                    "entitlements": [
+                      "SAP Analytics Cloud (embedded) — real-time analytics included at no extra cost",
+                      "SAP Business AI — invoice matching and demand forecasting included in base subscription",
+                      "SAP Build Work Zone, standard edition — default work zone included"
+                    ]
+                  },
+                  {
+                    "product": "SAP Ariba Procurement",
+                    "capabilities": [
+                      { "label": "Procurement Collaboration (Ariba Network) (SC2201)", "mandatory": "Mandatory" },
+                      { "label": "Guided Buying (SC3301)", "mandatory": "Mandatory" }
+                    ],
+                    "entitlements": null
+                  }
+                ],
+                "total_products": 2,
+                "total_capabilities": 5
+              }
+            ]
+          }
+        },
+        "sap_help_search": {
+          "description": "Search SAP Help documentation for topics.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Search term to look up in SAP Help topics." }
+            },
+            "required": ["query"]
+          },
+          "mock_response": {
+            "results": [
+              {
+                "title": "SAP S/4HANA Cloud — Integration Guide",
+                "snippet": "SAP S/4HANA Cloud integrates with SAP Ariba, SAP Analytics Cloud, and third-party systems via SAP Integration Suite. Pre-built integration content is available in the SAP Business Accelerator Hub.",
+                "loio": "abc123",
+                "productId": "s4hana-cloud"
+              },
+              {
+                "title": "SAP Ariba Procurement — Best Practices",
+                "snippet": "SAP Ariba Procurement supports end-to-end procure-to-pay processes including guided buying, purchase order management, and supplier invoice reconciliation.",
+                "loio": "def456",
+                "productId": "ariba"
+              }
+            ]
+          }
+        },
+        "sap_help_get_content": {
+          "description": "Retrieve the full content of a specific SAP Help page.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "loio": { "type": "string", "description": "ID of the SAP Help topic." },
+              "productId": { "type": "string", "description": "Product ID from search results." }
+            },
+            "required": ["loio", "productId"]
+          },
+          "mock_response": {
+            "title": "SAP S/4HANA Cloud — Integration Guide",
+            "content": "SAP S/4HANA Cloud, public edition integrates with external systems via SAP Integration Suite. The recommended integration approach uses pre-built integration content from the SAP Business Accelerator Hub. Key integration scenarios include: (1) SAP Ariba to S/4HANA for purchase order and invoice flows, (2) SAP Analytics Cloud to S/4HANA for live financial reporting, (3) Salesforce CRM to S/4HANA for order-to-cash automation. All scenarios use event-driven or API-based patterns managed through SAP Integration Suite."
+          }
+        },
+        "sap_knowledge_graph_api_discovery": {
+          "description": "Discover SAP APIs from the Business Accelerator Hub for a given use case.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "query": { "type": "string", "description": "Business use case or API search terms." }
+            },
+            "required": ["query"]
+          },
+          "mock_response": {
+            "apis": [
+              {
+                "name": "Sales Order (A2X)",
+                "type": "OData",
+                "ordId": "sap.s4:apiResource:API_SALES_ORDER_SRV:v1",
+                "description": "Create, read, update, and delete sales orders in SAP S/4HANA Cloud."
+              },
+              {
+                "name": "Business Partner",
+                "type": "OData",
+                "ordId": "sap.s4:apiResource:API_BUSINESS_PARTNER:v1",
+                "description": "Manage business partner master data in SAP S/4HANA Cloud."
+              }
+            ],
+            "total_apis": 2
+          }
+        },
+        "call_business_api": {
+          "description": "Call an SAP business OData API through the authenticated Business Connector proxy.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "ordId": { "type": "string", "description": "ORD ID of the business API." },
+              "path": { "type": "string", "description": "OData resource path." },
+              "query": { "type": "string", "description": "Optional OData query string." }
+            },
+            "required": ["ordId", "path"]
+          },
+          "mock_response": {
+            "value": [
+              { "SalesOrder": "10000001", "SalesOrderType": "OR", "SoldToParty": "ACME-001", "NetAmount": "125000.00", "TransactionCurrency": "USD" },
+              { "SalesOrder": "10000002", "SalesOrderType": "OR", "SoldToParty": "ACME-001", "NetAmount": "87500.00", "TransactionCurrency": "USD" }
+            ]
+          }
+        }
+      }
+    },
+    "dpca-mcp-server": {
+      "mcp_server_name": "dpca-mcp-server",
+      "description": "SAP data products — search and retrieve customer-specific data products from the tenant.",
+      "tools": {
+        "ums_search_data_products": {
+          "description": "Search for data products using formation-based tenant filtering.",
+          "input_schema": {
+            "type": "object",
+            "properties": {
+              "search_term": { "type": "string", "description": "Search term to filter data products by title or description." }
+            }
+          },
+          "mock_response": {
+            "results": [
+              {
+                "id": "sap.s4com:dataProduct:SalesOrder:v1",
+                "title": "Sales Order",
+                "description": "Sales order master data and transaction data from SAP S/4HANA Cloud.",
+                "lifecycleStatus": "active",
+                "tenant_uuid": "fa163eca-bbb6-1fd1-82dc-53576adce000"
+              },
+              {
+                "id": "sap.s4com:dataProduct:BusinessPartner:v1",
+                "title": "Business Partner",
+                "description": "Business partner master data including customers and vendors.",
+                "lifecycleStatus": "active",
+                "tenant_uuid": "fa163eca-bbb6-1fd1-82dc-53576adce000"
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "created_for_agent": "presales-briefing-agent",
+    "mock_mode": true,
+    "deterministic": true,
+    "total_servers": 2,
+    "total_tools": 7,
+    "generated_from": ["connected MCP servers: ibd-mcp-server, dpca-mcp-server"],
+    "generation_date": "2026-11-15",
+    "notes": "Uses only the three MCP servers already connected in this tenant: ibd-mcp-server (SAP knowledge graph, fit-gap, Help docs), dpca-mcp-server (data products). LeanIX and One360 replaced by ibd-mcp-server knowledge graph tools. Customer context comes from architect-uploaded meeting notes and to-be architecture documents."
+  }
+}

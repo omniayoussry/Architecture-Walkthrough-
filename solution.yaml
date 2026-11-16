@@ -1,0 +1,10 @@
+apiVersion: solution.sap/v1
+kind: Solution
+
+metadata:
+  name: presales-briefing-38adf
+  version: 1.0.0
+  description: AI agent that generates tailored presales briefing documents for SAP solution BOM items, drawing from SAP Knowledge Connector, One360, and LeanIX.
+
+assets:
+  - ref: ./assets/presales-briefing-agent/asset.yaml

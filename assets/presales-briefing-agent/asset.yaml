@@ -1,0 +1,56 @@
+apiVersion: asset.sap/v1
+kind: Asset
+
+metadata:
+  name: presales-briefing-agent
+  description: AI presales consultant agent that generates tailored customer briefing documents for SAP BOM items with justifications, entitlement highlights, and integration layer explanations using SAP Knowledge Connector, One360, and LeanIX.
+
+type: agent
+
+container:
+  buildPath: .
+  port: 5000
+
+provides:
+  apis:
+    - name: presales-briefing-agent
+      kind: a2a
+      ordId: customer.build:apiResource:presales-briefing-38adf.presales-briefing-agent:v1
+
+# MCP servers (ibd-mcp-server, dpca-mcp-server) are injected at runtime via
+# Agent Gateway and do not require ORD ID registration in asset.yaml.
+# The agent discovers them dynamically through get_mcp_tools() on each request.
+
+agentCard:
+  name: SAP Presales Briefing Consultant
+  version: 1.0.0
+  description: Generates tailored customer briefing documents for proposed SAP solution BOM items. Runs a mandatory data completeness gate before producing any output, then draws from SAP Knowledge Connector, One360 customer intelligence, and LeanIX enterprise architecture data to produce dual-purpose briefings covering BOM explanations, SAP best-practice justifications, entitlement highlights, and integration layer narratives.
+  capabilities:
+    skills:
+      - name: data-completeness-gate
+        description: Audits all required data domains and presents a structured completeness report to the architect before any briefing content is generated. Blocks Phase 2 until architect confirms all domains are resolved.
+      - name: bom-justification
+        description: Generates per-SKU BOM explanations and SAP best-practice justifications using SAP Knowledge Connector, with entitlement highlights for each product bundle.
+      - name: integration-layer
+        description: Produces integration layer narratives with concrete examples grounded in LeanIX customer application landscape and interface inventory data.
+      - name: briefing-generator
+        description: Assembles the full structured briefing document with dual-purpose formatting for customer reading and architect live presentation use.
+
+probes:
+  startup:
+    path: /.well-known/agent.json
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 18
+  liveness:
+    path: /.well-known/agent.json
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readiness:
+    path: /.well-known/agent.json
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
