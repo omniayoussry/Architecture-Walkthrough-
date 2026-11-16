@@ -5,13 +5,19 @@ Agent Gateway. Tools are loaded once per request, same lifecycle as agw.py.
 
 Servers are configured via the DIRECT_MCP_SERVERS environment variable:
     DIRECT_MCP_SERVERS='[
-        {"name": "ical-knowledge", "url": "https://prod-ical-mcpserver.c-86fbf98.kyma.ondemand.com/mcp", "token": "<bearer-token>"}
+        {
+            "name": "ical-knowledge",
+            "url": "https://prod-ical-mcpserver.c-86fbf98.kyma.ondemand.com/mcp",
+            "use_user_token": true
+        }
     ]'
 
 Each entry:
-  - name   : short slug used as tool name prefix (e.g. "ical-knowledge")
-  - url    : full MCP endpoint URL (must accept POST on the given path)
-  - token  : bearer token for authentication (optional — omit if server is public)
+  - name            : short slug used as tool name prefix (e.g. "ical-knowledge")
+  - url             : full MCP endpoint URL (must accept POST on the given path)
+  - token           : static bearer token (optional — use for service accounts)
+  - use_user_token  : if true, forward the current request's user JWT token
+                      (same token Agent Gateway uses). Preferred over a static token.
 
 In local / test mode (IBD_TESTING=1) this provider returns an empty list so that
 mcp-mock.json tools from agw.py remain the sole source of mock tools during tests.
@@ -30,6 +36,15 @@ from mcp.client.streamable_http import streamable_http_client
 from pydantic import Field, create_model
 
 logger = logging.getLogger(__name__)
+
+# Import user token getter lazily to avoid circular imports
+def _get_user_token_value() -> str | None:
+    """Return the current request's user JWT token, if available."""
+    try:
+        from mcp_providers.agw import get_user_token
+        return get_user_token()
+    except Exception:
+        return None
 
 
 def _get_server_configs() -> list[dict]:
@@ -72,13 +87,24 @@ def _schema_to_langchain_model(tool_name: str, input_schema: dict) -> type:
     return create_model(f"{tool_name}_args", **field_defs) if field_defs else create_model(f"{tool_name}_args")
 
 
-async def _load_tools_from_server(name: str, url: str, token: str | None) -> list[BaseTool]:
+async def _load_tools_from_server(
+    name: str, url: str, token: str | None, use_user_token: bool = False
+) -> list[BaseTool]:
     """Connect to one MCP server URL and return its tools as LangChain tools."""
     tools: list[BaseTool] = []
 
+    # Resolve the auth token — prefer static token, fall back to user JWT
+    resolved_token = token
+    if not resolved_token and use_user_token:
+        resolved_token = _get_user_token_value()
+        if resolved_token:
+            logger.debug("Direct MCP server '%s': using forwarded user JWT token", name)
+        else:
+            logger.warning("Direct MCP server '%s': use_user_token=true but no user token in context", name)
+
     headers = {}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    if resolved_token:
+        headers["Authorization"] = f"Bearer {resolved_token}"
 
     try:
         async with streamable_http_client(url, headers=headers) as (read, write, _):
@@ -157,7 +183,8 @@ async def get_direct_mcp_tools() -> list[BaseTool]:
             logger.warning("Direct MCP server '%s' has no URL — skipping", server_name)
             continue
 
-        tools = await _load_tools_from_server(server_name, server_url, server_token)
+        use_user_token = cfg.get("use_user_token", False)
+        tools = await _load_tools_from_server(server_name, server_url, server_token, use_user_token)
         all_tools.extend(tools)
 
     return all_tools

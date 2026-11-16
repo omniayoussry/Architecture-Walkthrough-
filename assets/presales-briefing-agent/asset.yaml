@@ -10,6 +10,9 @@ type: agent
 container:
   buildPath: .
   port: 5000
+  env:
+    - name: DIRECT_MCP_SERVERS
+      value: '[{"name":"ical-knowledge","url":"https://prod-ical-mcpserver.c-86fbf98.kyma.ondemand.com/mcp","use_user_token":true}]'
 
 provides:
   apis:

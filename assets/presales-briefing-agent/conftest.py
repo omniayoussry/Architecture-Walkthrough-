@@ -66,7 +66,7 @@ def agent_app_path(agent_path: Path) -> Path:
     return agent_path / "app"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def add_agent_to_path(agent_app_path: Path):
     """Add app/ to sys.path so agent modules can be imported as peer-level imports.
 
